@@ -1,0 +1,30 @@
+{
+  "name": "@norce/nco-config",
+  "version": "0.1.0",
+  "description": "Norce Checkout configuration as code: generate, validate, plan and apply channel configurations from git.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "nco": "./dist/cli/index.js" },
+  "files": ["dist", "catalog", "templates", "README.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli/index.ts",
+    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "picocolors": "^1.1.1",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}

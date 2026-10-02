@@ -1,0 +1,30 @@
+# Example merchant: 2 brands x 3 markets x 2 segments = 12 channels (minus 3 excluded), in prod, stage and qa.
+merchant: acme
+environments:
+  prod:  { target: prod }
+  stage: { target: stage }
+  qa:    { target: stage, channelSuffix: "-qa", vars: { frontend: "https://qa.acme.example" } }
+vars:
+  frontend: "https://www.acme.example"
+dimensions:
+  brand:   [acme, outlet]
+  market:  [se, no, dk]
+  segment: [b2c, b2b]
+channelName: "${brand}-${market}${segment}"
+channelNameParts:
+  segment: { b2c: "", b2b: "-b2b" }
+exclude:
+  - { brand: outlet, segment: b2b }
+features:
+  recurring: { brand: acme, market: se }
+layers:
+  - layers/base
+  - layers/segment/${segment}
+  - layers/market/${market}
+  - layers/features/${feature}
+  - layers/target/${target}
+  - layers/env/${env}
+  - channels/${channel}
+  - channels/${channel}/${env}
+secrets:
+  providers: [env, dotenv]

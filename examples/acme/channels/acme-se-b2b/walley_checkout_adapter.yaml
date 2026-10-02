@@ -1,0 +1,3 @@
+# exception: this one channel keeps a legacy terms page
+redirectUrls:
+  merchantTermsUri: "https://legacy.acme.example/b2b-terms"

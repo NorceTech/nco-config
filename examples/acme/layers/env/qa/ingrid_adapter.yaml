@@ -1,0 +1,3 @@
+# qa runs on stage with its own frontend; everything else comes from layers/target/stage
+options:
+  useAddressForm: true

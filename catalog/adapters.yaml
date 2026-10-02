@@ -1,0 +1,79 @@
+# Norce Checkout adapter catalog — what the tool knows about the platform.
+# Versioned with the tool; a project can point `catalog:` in nco.yaml at its own copy to override.
+version: 1
+
+# URL conventions per deployed environment ("target"). Tokens: ${slug} = merchant API prefix, ${host} = adapter host.
+# `adapter.internalUrl` is required by every adapter schema; the tool fills it in so you never have to type it.
+targets:
+  prod:
+    public: "https://${slug}.api-se.norce.tech/checkout/${host}"
+    internal: "https://${host}.checkout.prod.internal.norce.tech"
+    configuration: "https://${slug}.api-se.norce.tech/checkout/configuration"
+    configurationSchemaBase: "https://${slug}.api-se.norce.tech/checkout/configuration"
+    schemaFetchPublic: "https://${host}.checkout.prod.norce.tech"
+    schemaFetchConfiguration: "https://configuration.checkout.prod.norce.tech"
+  stage:
+    public: "https://${slug}.api-se.stage.norce.tech/checkout/${host}"
+    internal: "https://${host}.checkout.stage.internal.norce.tech"
+    configuration: "https://${slug}.api-se.stage.norce.tech/checkout/configuration"
+    configurationSchemaBase: "https://${slug}.api-se.stage.norce.tech/checkout/configuration"
+    schemaFetchPublic: "https://${host}.checkout.stage.norce.tech"
+    schemaFetchConfiguration: "https://configuration.checkout.stage.norce.tech"
+  playground:
+    public: "https://${slug}.api-se.playground.norce.tech/checkout/${host}"
+    internal: "https://${host}.checkout.playground.internal.norce.tech"
+    configuration: "https://${slug}.api-se.playground.norce.tech/checkout/configuration"
+    configurationSchemaBase: "https://${slug}.api-se.playground.norce.tech/checkout/configuration"
+    schemaFetchPublic: "https://${host}.checkout.playground.norce.tech"
+    schemaFetchConfiguration: "https://configuration.checkout.playground.norce.tech"
+  # Single-tenant deployments: add their targets in a project-level catalog (nco.yaml `catalog:`) with their own internal host.
+  # Norce's shared test environment (no merchant slug in host names).
+  test:
+    public: "https://${host}.checkout.test.norce.tech"
+    internal: "https://${host}.checkout.test.internal.norce.tech"
+    configuration: "https://configuration.checkout.test.norce.tech"
+    configurationSchemaBase: "https://checkout-configuration.test.norce.tech"
+
+# Document id → adapter host, schema version and credential paths.
+# `secrets` lists JSON paths (dotted; `[]` = any array item) that hold credentials. They are replaced by
+# ${secret:NAME} on export and redacted in plan output. Schemas that mark fields `format: password` are honoured too.
+adapters:
+  norce_adapter:               { host: norce-adapter,      schema: v2, secrets: [api.identityClientSecret] }
+  storm_adapter:               { host: storm-adapter,      schema: v1, secrets: [api.identityClientSecret] }
+  klarna_checkout_adapter:     { host: klarna-adapter,     schema: v1, secrets: [apiSettings.username, apiSettings.password] }
+  klarna_payments_adapter:     { host: klarna-adapter,     schema: v1, secrets: [apiSettings.username, apiSettings.password] }
+  walley_checkout_adapter:     { host: walley-adapter,     schema: v1, secrets: [apiSettings.clientId, apiSettings.apiSecret] }
+  qliro_checkout_adapter:      { host: qliro-adapter,      schema: v1, secrets: [apiSettings.merchantApiKey, apiSettings.merchantApiSecret] }
+  adyen_dropin_adapter:        { host: adyen-adapter,      schema: v1, secrets: [apiSettings.adyenApiKey, apiSettings.adyenClientKey, adyenOptions.webhookHmacKey] }
+  svea_checkout_adapter:       { host: svea-adapter,       schema: v1, secrets: [apiSettings.apiSecret] }
+  ledyer_checkout_adapter:     { host: ledyer-adapter,     schema: v1, secrets: [apiSettings.clientSecret, apiSettings.webhookAuthorizationToken] }
+  avarda_checkout_adapter:     { host: avarda-adapter,     schema: v1, secrets: [apiSettings.clientSecret] }
+  resursbank_checkout_adapter: { host: resursbank-adapter, schema: v1, secrets: [apiSettings.clientSecret, apiSettings.webhookAuthorizationToken] }
+  paypal_adapter:              { host: paypal-adapter,     schema: v1, secrets: [apiSettings.clientSecret] }
+  nexi_adapter:                { host: nexi-adapter,       schema: v1, secrets: [apiSettings.clientSecret] }
+  norcepay_adapter:            { host: norcepay-adapter,   schema: v1, secrets: [apiSettings.clientSecret] }
+  awardit_adapter:             { host: awardit-adapter,    schema: v1, secrets: [apiSettings.username, apiSettings.password, apiSettings.v2.clientSecret] }
+  ingrid_adapter:              { host: ingrid-adapter,     schema: v1, secrets: [apiSettings.apiKey] }
+  nshift_adapter:              { host: nshift-adapter,     schema: v1, secrets: [apiSettings.clientSecret] }
+  voyado_adapter:              { host: voyado-adapter,     schema: v1, secrets: [apiSettings.apiKey] }
+  nonpsp_adapter:              { host: nonpsp-adapter,     schema: v1, secrets: [] }
+  fraudguard_adapter:          { host: fraudguard-adapter, schema: v1, secrets: [slackNotification.username] }
+  # Order-service documents validated by the configuration service's generic schema (no adapter block).
+  stock_validation:            { host: "",  service: true, secrets: [] }
+  static_notifications:        { host: "",  service: true, secrets: ["order.notifications[].headers.Authorization"] }
+
+# Fallback heuristics by key name (case-insensitive regex) when neither schema nor catalog says anything.
+secretKeyPatterns:
+  - "secret$"
+  - "password"
+  - "token$"
+  - "apikey$"
+  - "hmackey$"
+  - "privatekey$"
+  - "^authorization$"
+  - "credential"
+nonSecretKeyPatterns:
+  - "url"
+  - "uri"
+  - "address"
+  - "pattern"

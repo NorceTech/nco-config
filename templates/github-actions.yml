@@ -1,0 +1,90 @@
+# Copy to .github/workflows/checkout-config.yml in your configuration repository.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   NCO_TOKEN_STAGE, NCO_TOKEN_PROD   — merchant bearer tokens from Norce
+#   plus one secret per ${secret:NAME} used in your layers (same NAME).
+# Use GitHub Environments ("stage", "prod") to require approval before prod applies.
+name: checkout configuration
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 5 * * *" # nightly drift check
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npx @norce/nco-config validate
+      - run: npx @norce/nco-config secrets check --env stage
+        env: { NCO_TOKEN_STAGE: ${{ secrets.NCO_TOKEN_STAGE }} } # add every ${secret:NAME} here or via a secrets→env mapping
+
+  plan:
+    if: github.event_name == 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: { env: [stage, prod] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - id: plan
+        run: |
+          npx @norce/nco-config plan --env ${{ matrix.env }} --json > plan.json || code=$?
+          echo "code=${code:-0}" >> "$GITHUB_OUTPUT"
+          test "${code:-0}" != "1"
+        env:
+          NCO_TOKEN_STAGE: ${{ secrets.NCO_TOKEN_STAGE }}
+          NCO_TOKEN_PROD: ${{ secrets.NCO_TOKEN_PROD }}
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const plan = require('./plan.json');
+            const s = plan.summary;
+            const lines = plan.changes.map(c => `- **${c.channel}** ${c.kind} \`${c.id}\`` + c.fields.map(f => `\n  - \`${f.path}\`: ${JSON.stringify(f.from)} → ${JSON.stringify(f.to)}`).join(''));
+            const body = `### nco plan — ${plan.env}\n${s.create} create, ${s.update} update, ${s.delete} delete, ${s.unchanged} unchanged\n\n${lines.join('\n') || '_no changes_'}`;
+            await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+
+  apply-stage:
+    if: github.event_name == 'push'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: stage
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npx @norce/nco-config apply --env stage --yes
+        env:
+          NCO_TOKEN_STAGE: ${{ secrets.NCO_TOKEN_STAGE }}
+
+  apply-prod:
+    if: github.event_name == 'push'
+    needs: apply-stage
+    runs-on: ubuntu-latest
+    environment: prod # configure required reviewers on this environment
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npx @norce/nco-config apply --env prod --yes
+        env:
+          NCO_TOKEN_PROD: ${{ secrets.NCO_TOKEN_PROD }}
+
+  drift:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npx @norce/nco-config drift --env prod # exit 2 = drift → job fails → notification
+        env:
+          NCO_TOKEN_PROD: ${{ secrets.NCO_TOKEN_PROD }}

@@ -1,0 +1,18 @@
+active: true
+settings:
+  clientId: 1192
+  applicationId: "${lookup:norce.applicationId.${target}.${channel}}"
+api:
+  identityAddress: "https://identity.norce.tech"
+  identityClientId: "${secret:NORCE_ADAPTER_API_IDENTITY_CLIENT_ID}"
+  identityClientSecret: "${secret:NORCE_ADAPTER_API_IDENTITY_CLIENT_SECRET}"
+  identityScope: "${target}"
+application:
+  productUrlPattern: "${var:frontend}/${lookup:locale.${market}}/product/{productId}"
+  imageBaseUrl: "https://images.acme.example"
+  weightUnit: kg
+  lengthUnit: cm
+country:
+  defaultCountry: "${MARKET}"
+features:
+  mapShippingFromNorceCommerce: false

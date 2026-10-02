@@ -1,0 +1,13 @@
+active: true
+apiSettings:
+  clientId: "${secret:WALLEY_CHECKOUT_ADAPTER_API_SETTINGS_CLIENT_ID}"
+  apiSecret: "${secret:WALLEY_CHECKOUT_ADAPTER_API_SETTINGS_API_SECRET}"
+  storeId-${MARKET}-${SEGMENT}: "${lookup:walley.storeId.${target}.${brand}.${market}.${segment}}"
+redirectUrls:
+  redirectPageUri: "${var:frontend}/${lookup:locale.${market}}/checkout/confirmation"
+  checkoutAbortedRedirectPageUri: "${var:frontend}/${lookup:locale.${market}}/checkout"
+  merchantTermsUri: "${var:frontend}/${lookup:locale.${market}}/terms"
+  notificationUri: "${publicUrl}"          # the adapter's own public URL, derived per environment
+  validationUri: "${publicUrl}"
+options:
+  mapDiscountPerRow: true

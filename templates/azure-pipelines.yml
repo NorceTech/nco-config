@@ -1,0 +1,87 @@
+# Copy to azure-pipelines.yml in your configuration repository.
+# Variable groups "checkout-config-stage" / "checkout-config-prod" hold NCO_TOKEN_<ENV> and every ${secret:NAME}
+# (mark them secret). Add an approval check on the "prod" environment in Pipelines → Environments.
+trigger:
+  branches: { include: [main] }
+pr:
+  branches: { include: [main] }
+schedules:
+  - cron: "17 5 * * *"
+    displayName: nightly drift
+    branches: { include: [main] }
+    always: true
+
+pool: { vmImage: ubuntu-latest }
+
+stages:
+  - stage: validate
+    jobs:
+      - job: validate
+        steps:
+          - task: NodeTool@0
+            inputs: { versionSpec: "22.x" }
+          - script: npx @norce/nco-config validate
+            displayName: validate
+
+  - stage: plan
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    dependsOn: validate
+    jobs:
+      - job: plan
+        variables:
+          - group: checkout-config-stage
+          - group: checkout-config-prod
+        steps:
+          - task: NodeTool@0
+            inputs: { versionSpec: "22.x" }
+          - script: |
+              npx @norce/nco-config plan --env stage; s=$?
+              npx @norce/nco-config plan --env prod; p=$?
+              [ "$s" != 1 ] && [ "$p" != 1 ]
+            displayName: plan (exit 2 = changes, shown in log)
+            env: { NCO_TOKEN_STAGE: $(NCO_TOKEN_STAGE), NCO_TOKEN_PROD: $(NCO_TOKEN_PROD) }
+
+  - stage: apply_stage
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'Schedule'))
+    dependsOn: validate
+    jobs:
+      - deployment: apply
+        environment: stage
+        variables: [{ group: checkout-config-stage }]
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: NodeTool@0
+                  inputs: { versionSpec: "22.x" }
+                - script: npx @norce/nco-config apply --env stage --yes
+                  env: { NCO_TOKEN_STAGE: $(NCO_TOKEN_STAGE) }
+
+  - stage: apply_prod
+    dependsOn: apply_stage
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'Schedule'))
+    jobs:
+      - deployment: apply
+        environment: prod # approval check configured on the environment
+        variables: [{ group: checkout-config-prod }]
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: NodeTool@0
+                  inputs: { versionSpec: "22.x" }
+                - script: npx @norce/nco-config apply --env prod --yes
+                  env: { NCO_TOKEN_PROD: $(NCO_TOKEN_PROD) }
+
+  - stage: drift
+    condition: eq(variables['Build.Reason'], 'Schedule')
+    jobs:
+      - job: drift
+        variables: [{ group: checkout-config-prod }]
+        steps:
+          - task: NodeTool@0
+            inputs: { versionSpec: "22.x" }
+          - script: npx @norce/nco-config drift --env prod
+            env: { NCO_TOKEN_PROD: $(NCO_TOKEN_PROD) }

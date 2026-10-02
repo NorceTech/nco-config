@@ -1,0 +1,5 @@
+node_modules/
+.nco/
+.env
+.env.*
+!.env.example

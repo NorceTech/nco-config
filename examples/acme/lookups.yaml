@@ -1,0 +1,14 @@
+locale: { se: sv-se, no: nb-no, dk: da-dk }
+currency: { se: SEK, no: NOK, dk: DKK }
+walley:
+  storeId:
+    prod:
+      acme:   { se: { b2c: "1603", b2b: "1604" }, no: { b2c: "1611", b2b: "1612" }, dk: { b2c: "1621", b2b: "1622" } }
+      outlet: { se: { b2c: "1703" }, no: { b2c: "1711" }, dk: { b2c: "1721" } }
+    stage:
+      acme:   { se: { b2c: "1347", b2b: "1348" }, no: { b2c: "1351", b2b: "1352" }, dk: { b2c: "1361", b2b: "1362" } }
+      outlet: { se: { b2c: "1403" }, no: { b2c: "1411" }, dk: { b2c: "1421" } }
+norce:
+  applicationId:
+    prod:  { acme-se: 1373, acme-se-b2b: 1374, acme-no: 1375, acme-no-b2b: 1376, acme-dk: 1377, acme-dk-b2b: 1378, outlet-se: 1380, outlet-no: 1381, outlet-dk: 1382 }
+    stage: { acme-se: 2373, acme-se-b2b: 2374, acme-no: 2375, acme-no-b2b: 2376, acme-dk: 2377, acme-dk-b2b: 2378, outlet-se: 2380, outlet-no: 2381, outlet-dk: 2382 }
